@@ -1,18 +1,32 @@
 import React, { Component } from 'react';
-import logo from './logo.svg';
 import './App.css';
+import Shortner from './components/Shortner';
 
 class App extends Component {
+  // Initialize state
+  state = { passwords: [] }
+
+  // Fetch passwords after first mount
+  componentDidMount() {
+    this.getPasswords();
+  }
+
+  getPasswords = () => {
+    // Get the passwords and store them in state
+    fetch('/api/passwords')
+      .then(res => res.json())
+      .then(passwords => this.setState({ passwords }));
+  }
+
   render() {
+    const { passwords } = this.state;
+
     return (
-      <div className="App">
-        <header className="App-header">
-          <img src={logo} className="App-logo" alt="logo" />
-          <h1 className="App-title">Welcome to React</h1>
-        </header>
-        <p className="App-intro">
-          To get started, edit <code>src/App.js</code> and save to reload.
-        </p>
+      <div className="App container-fluid">
+        <div className="row App-header">
+          <div className="col col-md-4 offset-md-2">URL Shortner</div>
+        </div>
+          <Shortner/>
       </div>
     );
   }
