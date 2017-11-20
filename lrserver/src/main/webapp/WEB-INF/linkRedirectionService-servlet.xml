@@ -1,0 +1,40 @@
+<beans xmlns="http://www.springframework.org/schema/beans"
+ xmlns:context="http://www.springframework.org/schema/context"
+ xmlns:mvc="http://www.springframework.org/schema/mvc" 
+ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+ xmlns:mongo="http://www.springframework.org/schema/data/mongo"
+ xsi:schemaLocation="http://www.springframework.org/schema/beans 
+			 http://www.springframework.org/schema/beans/spring-beans-4.0.xsd 
+			 http://www.springframework.org/schema/context 
+			 http://www.springframework.org/schema/context/spring-context-4.0.xsd 
+			 http://www.springframework.org/schema/mvc 
+			 http://www.springframework.org/schema/mvc/spring-mvc-4.0.xsd 
+			 http://www.springframework.org/schema/data/mongo 
+			 http://www.springframework.org/schema/data/mongo/spring-mongo-1.10.xsd">
+          		
+	
+	<mvc:annotation-driven/>
+	
+	<context:component-scan base-package="cpme281.hackathon.lrserver" />
+	
+	<bean id="urlQueueListener" class="cmpe281.hackathon.lrserver.component.MessageListenerComponent"/>
+		
+    <bean class="com.mongodb.MongoURI" id="mongoURI">
+        <constructor-arg value="mongodb://root:isha@ds027618.mlab.com:27618/shortlink"/>
+    </bean>
+
+    <bean class="com.mongodb.Mongo" id="mongo">
+        <constructor-arg ref="mongoURI" />
+    </bean>
+	
+	 <bean id="mongoTemplate" class="org.springframework.data.mongodb.core.MongoTemplate">
+        <constructor-arg name="mongo" ref="mongo"/>
+        <constructor-arg name="databaseName" value="shortlink"/>
+    </bean>
+	
+	<bean id="urlShortnerDAO" class="cmpe281.hackathon.lrserver.dao.URLShortnerDAOImpl">
+		<constructor-arg name="mongoOps" ref="mongoTemplate"/>
+	</bean>
+	
+
+</beans>

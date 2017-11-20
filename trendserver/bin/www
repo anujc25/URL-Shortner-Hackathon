@@ -1,0 +1,166 @@
+#!/usr/bin/env node
+
+/**
+ * Module dependencies.
+ */
+
+var app = require('../app');
+var debug = require('debug')('trendserver:server');
+var http = require('http');
+//var $ = require('jQuery');
+
+var mongodb = require('mongodb');
+var mongoose = require('mongoose');
+var db = mongoose.connection;
+
+app.use(function(req, res, next) {
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Allow-Headers", "X-Requested-With");
+  res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE');
+  next();
+});
+
+/* Check if db connection is not available */
+db.on('error', function(error){
+  console.log(error);
+});
+
+/* Check if db connection is available */
+db.once('open',function(){
+  console.log('Connection Established');
+});
+
+/**
+ * Get port from environment and store in Express.
+ */
+
+//sendData("hello welcome");
+
+var port = normalizePort(process.env.PORT || '3000');
+app.set('port', port);
+
+const Consumer = require('sqs-consumer');
+const AWS = require('aws-sdk');
+
+AWS.config.update({
+  region: 'us-west-1',
+  accessKeyId: 'AKIAJKXSW44AKTWZZYOA',
+  secretAccessKey: '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'
+});
+
+const awsapp = Consumer.create({
+  queueUrl: 'https://sqs.us-west-1.amazonaws.com/977584754471/trendserverqueue',
+  handleMessage: (message, done) => {
+    sendData(message);
+    done();
+  },
+  sqs: new AWS.SQS()
+});
+
+awsapp.on('error', (err) => {
+  console.log(err.message);
+});
+
+awsapp.start();
+
+/**
+ * Create HTTP server.
+ */
+
+var server = http.createServer(app);
+
+/**
+ * Listen on provided port, on all network interfaces.
+ */
+
+server.listen(port);
+server.on('error', onError);
+server.on('listening', onListening);
+
+/**
+ * Normalize a port into a number, string, or false.
+ */
+
+function normalizePort(val) {
+  var port = parseInt(val, 10);
+
+  if (isNaN(port)) {
+    // named pipe
+    return val;
+  }
+
+  if (port >= 0) {
+    // port number
+    return port;
+  }
+
+  return false;
+}
+
+/**
+ * Event listener for HTTP server "error" event.
+ */
+
+function onError(error) {
+  if (error.syscall !== 'listen') {
+    throw error;
+  }
+
+  var bind = typeof port === 'string'
+    ? 'Pipe ' + port
+    : 'Port ' + port;
+
+  // handle specific listen errors with friendly messages
+  switch (error.code) {
+    case 'EACCES':
+      console.error(bind + ' requires elevated privileges');
+      process.exit(1);
+      break;
+    case 'EADDRINUSE':
+      console.error(bind + ' is already in use');
+      process.exit(1);
+      break;
+    default:
+      throw error;
+  }
+}
+
+/**
+ * Event listener for HTTP server "listening" event.
+ */
+
+function onListening() {
+  var addr = server.address();
+  var bind = typeof addr === 'string'
+    ? 'pipe ' + addr
+    : 'port ' + addr.port;
+  debug('Listening on ' + bind);
+}
+
+/**
+ * On Listening to the queue
+ */
+
+function sendData(message) {
+  //console.log(message.Body);
+  var str=message.Body;
+  //var str="http://thepk.xyz/blockchain,https://www.blockchain.com,130.65.254.12,United States,Windows,Chrome";
+  var res = str.split(",");
+  var url = res[0].split("/");
+  var timestamp= (new Date().getMonth()+1)+"-"+(new Date().getDate())+"-"+(new Date().getFullYear());
+
+  var requestData= {
+    "shortenedURL": url[3],
+    "originalURL": res[1],
+    "ip": res[2],
+    "country": res[3],
+    "platform": res[4],
+    "browser": res[5],
+    "timestamp": timestamp
+  };
+ // console.log(requestData);
+  db.collection("trenddata").insert(requestData, function(err, res) {
+    if (err) throw err;
+    console.log(res);
+  });
+}
